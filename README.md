@@ -1,5 +1,7 @@
 # PagSeguro PHP
 
+![PagSeguro](https://raw.githubusercontent.com/gabrielsbarros/pagseguro/master/pagseguro.jpg)
+
 A mini biblioteca PagSeguro PHP (não-oficial) permite, de forma bem simplificada, realizar transações, fazer assinaturas, fazer consultas e sincronizar notificações perdidas.
 
 Exemplos:
