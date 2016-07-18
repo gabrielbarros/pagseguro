@@ -30,7 +30,7 @@ try {
         // Identificação do produto. Máx 100 caracteres
         'id' => 123,
 
-        // Preço. Valor inteiro, máx 100 caracteres
+        // Preço. Valor inteiro
         'preco' => 19.99,
 
         // Descrição do produto. Máx 100 caracteres
