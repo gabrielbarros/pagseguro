@@ -72,32 +72,32 @@ abstract class PagSeguro {
 
         $url = $this->api_url . $path;
 
-        $response = $http->request(
+        $http->request(
             $method, $url,
             array_merge($default_param, $param)
         );
 
-        if ($response['error']) {
+        if ($http->error) {
             $this->erro('Não foi possível se comunicar com o PagSeguro');
         }
 
         // No método POST, os dados vêm em UTF-8;
         // No método GET, os dados vêm em ISO-8859-1
         if ($method === 'GET') {
-            $response['content'] = utf8_encode($response['content']);
+            $http->responseText = utf8_encode($http->responseText);
         }
 
         // Erros?
         // 401: E-mail/token inválido
         // 404: Notificação/assinatura/transação não encontrada
-        $http_code = $response['info']['http_code'];
+        $http_code = $http->status;
         if ($http_code !== 200) {
             $msg = 'Ocorreu um erro com o código HTTP ' . $http_code;
 
             // O normal é retornar um txt ou xml, mas às vezes o PagSeguro
             // retorna uma página html gigante quando está em manutenção
-            if (strlen($response['content']) < 500) {
-                $msg .= "\n\n" . $response['content'] . "\n\n";
+            if (strlen($http->responseText) < 500) {
+                $msg .= "\n\n" . $http->responseText . "\n\n";
             }
 
             $this->erro($msg);
@@ -107,7 +107,7 @@ abstract class PagSeguro {
         libxml_use_internal_errors(true);
 
         // Obter XML
-        $xml = simplexml_load_string($response['content']);
+        $xml = simplexml_load_string($http->responseText);
 
         if ($xml === false) {
             $this->erro('XML inválido');

@@ -2,28 +2,32 @@
 class HttpRequest {
 
     public $charset = 'UTF-8';
-    public $user_agent = 'cURL';
-    public $follow_location = true;
+    public $userAgent = 'curl';
+    public $followLocation = true;
+    public $connectTimeout = 30;
     public $timeout = 30;
-    public $connect_timeout = 30;
-    public $auto_referer = true;
-    public $max_redirs = 10;
-    public $post_content_type;
-    public $debug = false;
+    public $autoReferer = true;
+    public $maxRedirs = 10;
+    public $postContentType;
 
+    private $url;
+    private $urlInfo;
+    private $getParam = array();
+    private $postParam = array();
     private $upload = false;
     private $cookies;
     private $headers = array();
-    private $custom_headers = array();
-    private $custom_options = array();
+    private $options = array();
     private $username;
     private $password;
 
-    private $preserve_upload = false;
-    private $preserve_cookies = false;
-    private $preserve_headers = false;
-    private $preserve_options = false;
-    private $preserve_authentication = false;
+    // Retorno
+    public $error;
+    public $errorMsg;
+    public $responseText;
+    public $responseHeaders;
+    public $status;
+
 
     const UA_IE10 = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)';
     const UA_IE9 = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)';
@@ -39,27 +43,14 @@ class HttpRequest {
     const UA_GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 
 
-    private function get_params($arr, $separator = '&') {
-        $str = '';
-
-        foreach ($arr as $key => $value) {
-            $str .= $key . '=' . rawurlencode($value) . $separator;
-        }
-
-        return rtrim($str, $separator);
-    }
-
-
-    public function setCookies($cookie, $preserve = false) {
+    public function setCookies($cookie) {
         if (is_array($cookie)) {
-            $this->cookies = $this->get_params($cookie, '; ');
+            $this->cookies = http_build_query($cookie, '', '; ', PHP_QUERY_RFC3986);
         }
 
         else {
             $this->cookies = $cookie;
         }
-
-        $this->preserve_cookies = $preserve;
     }
 
     public function setHeaders($headers) {
@@ -68,53 +59,35 @@ class HttpRequest {
         }
     }
 
-    public function setCustomHeaders($headers, $preserve = false) {
-
-        foreach ($headers as $key => $value) {
-            $this->custom_headers[] = $key . ': ' . $value;
-        }
-
-        $this->preserve_headers = $preserve;
+    public function setOptions($options) {
+        $this->options = $options;
     }
 
-    public function setCustomOptions($options, $preserve = false) {
-        $this->custom_options = $options;
-        $this->preserve_options = $preserve;
-    }
-
-    public function setAuthentication($username, $password, $preserve = false) {
+    public function setAuthentication($username, $password) {
         $this->username = $username;
         $this->password = $password;
-        $this->preserve_authentication = $preserve;
     }
 
-    public function setUpload($upload, $preserve = false) {
-        $this->upload = $upload;
-        $this->preserve_upload = $preserve;
+    public function get($url, $param = array()) {
+        return $this->request('GET', $url, $param);
     }
 
-    public function __toString() {
-        return print_r(array_map(function($elem) {
-            if ($elem === true) {
-                return 'true';
-            }
-            if ($elem === false) {
-                return 'false';
-            }
-            return $elem;
-        }, get_object_vars($this)), true);
+    public function post($url, $param = array(), $param2 = array()) {
+        return $this->request('POST', $url, $param, $param2);
     }
 
-
-    public function get($url, $data = array()) {
-        return $this->request('GET', $url, $data);
+    public function head($url, $param = array()) {
+        return $this->request('HEAD', $url, $param);
     }
 
-    public function post($url, $data = array(), $data2 = array()) {
-        return $this->request('POST', $url, $data, $data2);
-    }
+    public function request($method, $url, $param = array(), $param2 = array()) {
 
-    public function request($method, $url, $data = array(), $data2 = array()) {
+        $this->url = $url;
+
+        // Obter informações da URL: host, path, scheme
+        $this->urlInfo = parse_url($url);
+
+        // CURL options
         $options = array();
 
         // Validar URL
@@ -122,86 +95,65 @@ class HttpRequest {
             throw new Exception('Invalid URL');
         }
 
-        // Obter informações da URL: host, path, scheme
-        $url_info = parse_url($url);
+        $this->getParam = $param;
 
-
-        if ($method === 'GET') {
-            if (count($data)) $url .= '?' . http_build_query($data);
-        }
-
-        elseif ($method === 'POST') {
-            if (count($data2)) $url .= '?' . http_build_query($data2);
+        if ($method === 'POST') {
+            $this->getParam = $param2;
 
             $options[CURLOPT_POST] = true;
 
-            // Upload
-            if ($this->upload) {
-                $options[CURLOPT_POSTFIELDS] = $data;
-                // $this->post_content_type = 'multipart/form-data';
-            }
-
             // Formulário
-            elseif (is_array($data)) {
-                $options[CURLOPT_POSTFIELDS] = $this->get_params($data);
-                $this->post_content_type = 'application/x-www-form-urlencoded; charset=' . $this->charset;
+            if (is_array($param)) {
+
+                // Mesclar com possíveis variáveis vindas do uploadFile()
+                $this->postParam = array_merge($this->postParam, $param);
+
+                if ($this->upload) {
+                    $options[CURLOPT_POSTFIELDS] = $this->postParam;
+                }
+                else {
+                    $options[CURLOPT_POSTFIELDS] = http_build_query($this->postParam);
+                    $this->postContentType = 'application/x-www-form-urlencoded; charset=' . $this->charset;
+                }
             }
 
             // JSON, XML, etc...
             else {
-                $options[CURLOPT_POSTFIELDS] = $data;
+                $options[CURLOPT_POSTFIELDS] = $param;
             }
 
-            if (isset($this->post_content_type)) {
-                $this->setCustomHeaders(array(
-                    'Content-Type' => $this->post_content_type
+            if (isset($this->postContentType)) {
+                $this->setHeaders(array(
+                    'Content-Type' => $this->postContentType
                 ));
             }
         }
 
         elseif ($method === 'HEAD') {
-            $options[CURLOPT_HEADER] = true;
             $options[CURLOPT_NOBODY] = true;
-            $this->follow_location = false;
+            $this->followLocation = false;
         }
 
-        else {
+        elseif ($method !== 'GET') {
             $options[CURLOPT_CUSTOMREQUEST] = $method;
         }
 
-        // Custom options
-        foreach ($this->custom_options as $key => $value) {
-            $options[$key] = $value;
-        }
-
-        if (!isset($url_info['path'])) $url_info['path'] = '/';
-
-        // Headers obrigatórios
-        $this->setHeaders(array(
-            'Host' => $url_info['host'],
-            'Method' => $method,
-            'Path' => $url_info['path'],
-            'Scheme' => $url_info['scheme'],
-            'Version' => 'HTTP/1.1',
-            'Accept-Language' => 'pt-BR,pt;q=0.8,en-US;q=0.6,en;q=0.4',
-            'Cache-Control' => 'max-age=0',
-            'Connection' => 'keep-alive'
-        ));
-
-        $options[CURLOPT_URL] = $url;
+        $options[CURLOPT_URL] = $this->getFullUrl();
+        $options[CURLOPT_HEADER] = true;
         $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
-        $options[CURLOPT_CONNECTTIMEOUT] = $this->connect_timeout;
+        $options[CURLOPT_CONNECTTIMEOUT] = $this->connectTimeout;
         $options[CURLOPT_TIMEOUT] = $this->timeout;
-        $options[CURLOPT_MAXREDIRS] = $this->max_redirs;
+        $options[CURLOPT_MAXREDIRS] = $this->maxRedirs;
         $options[CURLOPT_RETURNTRANSFER] = true;
-        $options[CURLOPT_ENCODING] = '';
-        $options[CURLOPT_AUTOREFERER] = $this->auto_referer;
-        $options[CURLOPT_FOLLOWLOCATION] = $this->follow_location;
-        $options[CURLOPT_USERAGENT] = $this->user_agent;
-        $options[CURLOPT_HTTPHEADER] = array_merge($this->headers, $this->custom_headers);
+        $options[CURLOPT_ENCODING] = ''; // Accept: */*
+        $options[CURLOPT_AUTOREFERER] = $this->autoReferer;
+        $options[CURLOPT_FOLLOWLOCATION] = $this->followLocation;
+        $options[CURLOPT_USERAGENT] = $this->userAgent;
+        $options[CURLOPT_HTTPHEADER] = $this->headers;
 
-        // Especificar certificado SSL para acessar páginas de forma segura?
-        if (strtolower($url_info['scheme']) === 'https') {
+
+        // Especificar certificado SSL para acessar páginas de forma segura
+        if (strtolower($this->urlInfo['scheme']) === 'https') {
             $options[CURLOPT_SSL_VERIFYPEER] = true;
             $options[CURLOPT_SSL_VERIFYHOST] = 2;
             $options[CURLOPT_CAINFO] = __DIR__ . DIRECTORY_SEPARATOR . 'cacert.pem';
@@ -218,10 +170,16 @@ class HttpRequest {
 
         // Especificar cookie para acessar a página?
         if (isset($this->cookies)) {
-            $options[CURLOPT_COOKIEJAR] = 'cookie.txt';
-            $options[CURLOPT_COOKIEFILE] = 'cookie.txt';
-            $options[CURLOPT_COOKIESESSION] = true;
+            //$options[CURLOPT_COOKIEJAR] = 'cookie.txt';
+            //$options[CURLOPT_COOKIEFILE] = 'cookie.txt';
+            //$options[CURLOPT_COOKIESESSION] = true;
             $options[CURLOPT_COOKIE] = $this->cookies;
+        }
+
+
+        // Custom CURL options
+        foreach ($this->options as $key => $value) {
+            $options[$key] = $value;
         }
 
         $curl = curl_init();
@@ -231,104 +189,76 @@ class HttpRequest {
 
         // Se ocorreu um erro ao tentar solicitar a URL...
         if (curl_errno($curl))  {
-            $arr = array(
-                'error' => true,
-                'error_info' => curl_error($curl),
-                'content' => '',
-                'info' => array()
-            );
+            $this->error = true;
+            $this->errorMsg = curl_error($curl);
         }
 
-        // Se conseguiu acessar a URL especificada...
         else {
-            $arr = array(
-                'error' => false,
-                'error_info' => '',
-                'content' => $output,
-                'info' => curl_getinfo($curl)
-            );
+            $this->error = false;
+            $curlInfo = curl_getinfo($curl);
 
-            curl_close($curl);
+            if ($method === 'HEAD') {
+                $this->responseText = $output;
+                $responseHeaders = $output;
+            }
+            else {
+                $headerSize = $curlInfo['header_size'];
+                $this->responseText = substr($output, $headerSize);
+                $responseHeaders = substr($output, 0, $headerSize);
+            }
+
+            $this->responseHeaders = $this->headersToArray($responseHeaders);
+            $this->status = $curlInfo['http_code'];
+        }
+    }
+
+    private function getFullUrl() {
+        $url = $this->url;
+
+        if (count($this->getParam)) {
+            $buildQuery = http_build_query($this->getParam);
+
+            if (isset($this->urlInfo['query'])) {
+                $url .= '&' . ltrim($buildQuery, '&');
+            }
+            else {
+                $url .= '?' . ltrim($buildQuery, '?');
+            }
         }
 
-        if (!$this->preserve_upload)   $this->upload = false;
-        if (!$this->preserve_cookies)  unset($this->cookies);
-        if (!$this->preserve_headers)  $this->custom_headers = array();
-        if (!$this->preserve_options)  $this->preserve_options = array();
-        if (!$this->preserve_authentication) unset($this->username, $this->password);
+        return $url;
+    }
 
-        if (!$this->debug) {
-            return $arr;
+    private function headersToArray($headers) {
+
+        $lines = explode("\r\n", trim($headers));
+        $arrHeaders = array();
+
+        foreach ($lines as $value) {
+            $parts = explode(':', $value, 2);
+
+            if (count($parts) > 1) {
+                $arrHeaders[strtolower($parts[0])] = $parts[1];
+            }
         }
 
-        header('Content-Type: text/plain');
-        print_r($arr);
+        return $arrHeaders;
     }
 
     // Especificar um arquivo para upload
-    public function upload_file($path, $mimetype, $filename) {
+    public function uploadFile($key, $path, $mimetype) {
+
+        $filename = basename($path);
 
         if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
-            return new CURLFile($path, $mimetype, $filename);
+            $file = new CURLFile($path, $mimetype, $filename);
         }
 
-        return '@' . $path . ";type={$mimetype};filename={$filename}";
-    }
-
-    // Descobrir para onde uma URL redireciona
-    public function extract_url($url) {
-        $info = $this->request('HEAD', $url);
-
-        if ($info['error']) {
-            return false;
+        else {
+            $file = '@' . $path . ";type={$mimetype};filename={$filename}";
         }
 
-        return $info['info']['redirect_url'];
-    }
-
-    // Obter o código HTTP que o servidor envia de volta, dada uma URL
-    public function http_code($url) {
-        $info = $this->request('HEAD', $url);
-
-        if ($info['error']) {
-            return false;
-        }
-
-        return $info['info']['http_code'];
-    }
-
-    // Descobrir o tamanho de um arquivo
-    public function file_size($url) {
-        $info = $this->request('HEAD', $url);
-
-        if ($info['error']) {
-            return false;
-        }
-
-        return $info['info']['download_content_length'];
-    }
-
-    // Obter cabeçalhos HTTP (array)
-    public function headers($url) {
-        $headers = $this->request('HEAD', $url);
-
-        if ($headers['error']) {
-            return false;
-        }
-
-        return trim($headers['content']);
-    }
-
-    // Salvar página
-    public function save($url, $path) {
-        $page = $this->get($url);
-
-        if ($page['error']) {
-            return false;
-        }
-
-        $content = $page['content'];
-        file_put_contents($path, $content);
-        //return $page;
+        $this->upload = true;
+        $this->postParam[$key] = $file;
     }
 }
