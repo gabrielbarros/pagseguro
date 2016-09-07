@@ -21,7 +21,7 @@ class HttpRequest {
     private $username;
     private $password;
 
-    // Retorno
+    // Return variables
     public $error;
     public $errorMsg;
     public $responseText;
@@ -84,13 +84,13 @@ class HttpRequest {
 
         $this->url = $url;
 
-        // Obter informações da URL: host, path, scheme
+        // Get URL information: host, path, scheme
         $this->urlInfo = parse_url($url);
 
         // CURL options
         $options = array();
 
-        // Validar URL
+        // Validate URL
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             throw new Exception('Invalid URL');
         }
@@ -102,10 +102,10 @@ class HttpRequest {
 
             $options[CURLOPT_POST] = true;
 
-            // Formulário
+            // Form
             if (is_array($param)) {
 
-                // Mesclar com possíveis variáveis vindas do uploadFile()
+                // Merge with possible variables coming from uploadFile()
                 $this->postParam = array_merge($this->postParam, $param);
 
                 if ($this->upload) {
@@ -152,7 +152,7 @@ class HttpRequest {
         $options[CURLOPT_HTTPHEADER] = $this->headers;
 
 
-        // Especificar certificado SSL para acessar páginas de forma segura
+        // Set SSL certificate to securely access the page
         if (strtolower($this->urlInfo['scheme']) === 'https') {
             $options[CURLOPT_SSL_VERIFYPEER] = true;
             $options[CURLOPT_SSL_VERIFYHOST] = 2;
@@ -163,12 +163,12 @@ class HttpRequest {
             $options[CURLOPT_SSL_VERIFYHOST] = 0;
         }
 
-        // Usuário e senha para acessar a página
+        // User and password to access the page
         if (isset($this->username, $this->password)) {
             $options[CURLOPT_USERPWD] = $this->username . ':' . $this->password;
         }
 
-        // Especificar cookie para acessar a página?
+        // Set cookie
         if (isset($this->cookies)) {
             //$options[CURLOPT_COOKIEJAR] = 'cookie.txt';
             //$options[CURLOPT_COOKIEFILE] = 'cookie.txt';
@@ -187,7 +187,7 @@ class HttpRequest {
 
         $output = curl_exec($curl);
 
-        // Se ocorreu um erro ao tentar solicitar a URL...
+        // If an error has ocurred while requesting the URL...
         if (curl_errno($curl))  {
             $this->error = true;
             $this->errorMsg = curl_error($curl);
@@ -245,7 +245,7 @@ class HttpRequest {
         return $arrHeaders;
     }
 
-    // Especificar um arquivo para upload
+    // Set some file to upload
     public function uploadFile($key, $path, $mimetype) {
 
         $filename = basename($path);
