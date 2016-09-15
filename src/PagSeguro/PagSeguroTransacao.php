@@ -1,4 +1,6 @@
 <?php
+namespace PagSeguro;
+
 class PagSeguroTransacao extends PagSeguro {
 
     // Status das notificações de transações
@@ -15,7 +17,7 @@ class PagSeguroTransacao extends PagSeguro {
     const ASSINATURA = 11;
 
 
-    private function param_produtos($produtos) {
+    private function paramProdutos($produtos) {
         $param = array();
 
         // Se for somente 1 produto, coloca dentro de 1 array...
@@ -59,14 +61,14 @@ class PagSeguroTransacao extends PagSeguro {
         $param = array(
             'currency' => 'BRL',
             'reference' => $id,
-            'redirectURL' => $this->redirect_url,
-            'notificationURL' => $this->notificacao_url
+            'redirectURL' => $this->redirectUrl,
+            'notificationURL' => $this->notificacaoUrl
         );
 
         $param = array_merge($param,
-            $this->param_produtos($produtos),
-            $this->param_pessoa($pessoa),
-            $this->param_endereco($endereco)
+            $this->paramProdutos($produtos),
+            $this->paramPessoa($pessoa),
+            $this->paramEndereco($endereco)
         );
 
         $xml = $this->request('POST', '/v2/checkout', $param);

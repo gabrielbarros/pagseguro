@@ -1,10 +1,8 @@
 <?php
-require '../HttpRequest.class.php';
-require 'token.php';
-require '../PagSeguro.php';
-require '../PagSeguroAssinatura.php';
-require '../PagSeguroTransacao.php';
-require '../PagSeguroNotificacao.php';
+require 'autoload.php';
+
+use PagSeguro\PagSeguroNotificacao;
+use PagSeguro\PagSeguroException;
 
 // IMPORTANTE! Use https em localhost para testar na sandbox
 
@@ -13,9 +11,10 @@ $pagseguro = new PagSeguroNotificacao($sandbox);
 
 $pagseguro->email = PAGSEGURO_EMAIL;
 $pagseguro->token = PAGSEGURO_TOKEN;
-$pagseguro->user_agent = 'Meu Site (+https://meusite.com.br)'; // opcional
+$pagseguro->userAgent = 'Meu Site (+https://meusite.com.br)'; // opcional
 
-$pagseguro->callback = function($xml) {
+$pagseguro->callback = function($xml, $notificationType, $notificationCode,
+                                 $manual) {
     // salvar no banco de dados...
 
     // retornar true se salvar no banco de dados

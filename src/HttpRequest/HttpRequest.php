@@ -1,4 +1,6 @@
 <?php
+namespace HttpRequest;
+
 class HttpRequest {
 
     public $charset = 'UTF-8';
@@ -8,12 +10,12 @@ class HttpRequest {
     public $timeout = 30;
     public $autoReferer = true;
     public $maxRedirs = 10;
-    public $postContentType;
+    public $contentType;
 
     private $url;
     private $urlInfo;
-    private $getParam = array();
-    private $postParam = array();
+    private $query;
+    private $body;
     private $upload = false;
     private $cookies;
     private $headers = array();
@@ -43,6 +45,19 @@ class HttpRequest {
     const UA_GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 
 
+    public function setQuery($query) {
+        $this->query = $query;
+    }
+
+    public function setBody($body) {
+        if (is_array($body)) {
+            $this->body = array_merge((array) $this->body, $body);
+        }
+        else {
+            $this->body = $body;
+        }
+    }
+
     public function setCookies($cookie) {
         if (is_array($cookie)) {
             $this->cookies = http_build_query($cookie, '', '; ', PHP_QUERY_RFC3986);
@@ -68,19 +83,31 @@ class HttpRequest {
         $this->password = $password;
     }
 
-    public function get($url, $param = array()) {
-        return $this->request('GET', $url, $param);
+    public function get($url) {
+        return $this->request('GET', $url);
     }
 
-    public function post($url, $param = array(), $param2 = array()) {
-        return $this->request('POST', $url, $param, $param2);
+    public function post($url) {
+        return $this->request('POST', $url);
     }
 
-    public function head($url, $param = array()) {
-        return $this->request('HEAD', $url, $param);
+    public function head($url) {
+        return $this->request('HEAD', $url);
     }
 
-    public function request($method, $url, $param = array(), $param2 = array()) {
+    public function put($url) {
+        return $this->request('PUT', $url);
+    }
+
+    public function delete($url) {
+        return $this->request('DELETE', $url);
+    }
+
+    public function patch($url) {
+        return $this->request('PATCH', $url);
+    }
+
+    public function request($method, $url) {
 
         $this->url = $url;
 
@@ -95,48 +122,46 @@ class HttpRequest {
             throw new Exception('Invalid URL');
         }
 
-        $this->getParam = $param;
-
+        // HTTP method
         if ($method === 'POST') {
-            $this->getParam = $param2;
-
             $options[CURLOPT_POST] = true;
+        }
+        elseif ($method === 'HEAD') {
+            $options[CURLOPT_NOBODY] = true;
+            $this->followLocation = false;
+        }
+        elseif ($method !== 'GET') {
+            $options[CURLOPT_CUSTOMREQUEST] = $method;
+        }
+
+
+        // Body message
+        if (!is_null($this->body)) {
 
             // Form
-            if (is_array($param)) {
-
-                // Merge with possible variables coming from uploadFile()
-                $this->postParam = array_merge($this->postParam, $param);
+            if (is_array($this->body)) {
 
                 if ($this->upload) {
-                    $options[CURLOPT_POSTFIELDS] = $this->postParam;
+                    $options[CURLOPT_POSTFIELDS] = $this->body;
                 }
                 else {
-                    $options[CURLOPT_POSTFIELDS] = http_build_query($this->postParam);
-                    $this->postContentType = 'application/x-www-form-urlencoded; charset=' . $this->charset;
+                    $options[CURLOPT_POSTFIELDS] = http_build_query($this->body);
+                    $this->contentType = 'application/x-www-form-urlencoded; charset=' . $this->charset;
                 }
             }
 
             // JSON, XML, etc...
             else {
-                $options[CURLOPT_POSTFIELDS] = $param;
+                $options[CURLOPT_POSTFIELDS] = $this->body;
             }
 
-            if (isset($this->postContentType)) {
+            if (isset($this->contentType)) {
                 $this->setHeaders(array(
-                    'Content-Type' => $this->postContentType
+                    'Content-Type' => $this->contentType
                 ));
             }
         }
 
-        elseif ($method === 'HEAD') {
-            $options[CURLOPT_NOBODY] = true;
-            $this->followLocation = false;
-        }
-
-        elseif ($method !== 'GET') {
-            $options[CURLOPT_CUSTOMREQUEST] = $method;
-        }
 
         $options[CURLOPT_URL] = $this->getFullUrl();
         $options[CURLOPT_HEADER] = true;
@@ -145,7 +170,7 @@ class HttpRequest {
         $options[CURLOPT_TIMEOUT] = $this->timeout;
         $options[CURLOPT_MAXREDIRS] = $this->maxRedirs;
         $options[CURLOPT_RETURNTRANSFER] = true;
-        $options[CURLOPT_ENCODING] = ''; // Accept: */*
+        $options[CURLOPT_ENCODING] = ''; // Accept-Encoding: "deflate, gzip"
         $options[CURLOPT_AUTOREFERER] = $this->autoReferer;
         $options[CURLOPT_FOLLOWLOCATION] = $this->followLocation;
         $options[CURLOPT_USERAGENT] = $this->userAgent;
@@ -213,16 +238,16 @@ class HttpRequest {
     }
 
     private function getFullUrl() {
-        $url = $this->url;
+        $url = rtrim($this->url, '&?');
 
-        if (count($this->getParam)) {
-            $buildQuery = http_build_query($this->getParam);
+        if (count($this->query)) {
+            $buildQuery = http_build_query($this->query);
 
             if (isset($this->urlInfo['query'])) {
-                $url .= '&' . ltrim($buildQuery, '&');
+                $url .= '&' . $buildQuery;
             }
             else {
-                $url .= '?' . ltrim($buildQuery, '?');
+                $url .= '?' . $buildQuery;
             }
         }
 
@@ -251,7 +276,7 @@ class HttpRequest {
         $filename = basename($path);
 
         if (version_compare(PHP_VERSION, '5.5.0', '>=')) {
-            $file = new CURLFile($path, $mimetype, $filename);
+            $file = new \CURLFile($path, $mimetype, $filename);
         }
 
         else {
@@ -259,6 +284,8 @@ class HttpRequest {
         }
 
         $this->upload = true;
-        $this->postParam[$key] = $file;
+        $this->setBody(array(
+            $key => $file
+        ));
     }
 }

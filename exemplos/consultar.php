@@ -1,15 +1,16 @@
 <?php
-require '../HttpRequest.class.php';
-require 'token.php';
-require '../PagSeguro.php';
-require '../PagSeguroNotificacao.php';
+require 'autoload.php';
+
+use PagSeguro\PagSeguroConsulta;
+use PagSeguro\PagSeguroNotificacao;
+use PagSeguro\PagSeguroException;
 
 $sandbox = true;
-$pagseguro = new PagSeguroNotificacao($sandbox);
+$pagseguro = new PagSeguroConsulta($sandbox);
 
 $pagseguro->email = PAGSEGURO_EMAIL;
 $pagseguro->token = PAGSEGURO_TOKEN;
-$pagseguro->user_agent = 'Meu Site (+https://meusite.com.br)'; // opcional
+$pagseguro->userAgent = 'Meu Site (+https://meusite.com.br)'; // opcional
 
 
 try {

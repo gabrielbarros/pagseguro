@@ -1,8 +1,9 @@
 <?php
-require '../HttpRequest.class.php';
-require 'token.php';
-require '../PagSeguro.php';
-require '../PagSeguroNotificacao.php';
+require 'autoload.php';
+
+use PagSeguro\PagSeguroConsulta;
+use PagSeguro\PagSeguroNotificacao;
+use PagSeguro\PagSeguroException;
 
 // IMPORTANTE! Use https em localhost para testar na sandbox
 
@@ -11,18 +12,18 @@ $pagseguro = new PagSeguroNotificacao($sandbox);
 
 $pagseguro->email = PAGSEGURO_EMAIL;
 $pagseguro->token = PAGSEGURO_TOKEN;
-$pagseguro->user_agent = 'Meu Site (+https://meusite.com.br)'; // opcional
+$pagseguro->userAgent = 'Meu Site (+https://meusite.com.br)'; // opcional
 
-$pagseguro->callback = function($xml, $notification_type, $notification_code,
+$pagseguro->callback = function($xml, $notificationType, $notificationCode,
                                  $manual) {
 
     /*
     $xml: o xml da consulta (ver abaixo)
 
-    $notification_type:
+    $notificationType:
         preApproval (assinatura) ou transaction (transação)
 
-    $notification_code:
+    $notificationCode:
         código da notificação
 
     $manual:
@@ -131,7 +132,7 @@ $pagseguro->callback = function($xml, $notification_type, $notification_code,
 
 
 try {
-    $salvou = $pagseguro->notificar($_POST);
+    $salvou = $pagseguro->receberNotificacao($_POST);
 
     if ($salvou) {
         echo 'Notificação salva com sucesso';

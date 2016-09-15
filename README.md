@@ -14,13 +14,13 @@ Exemplos:
     $pagseguro->email = 'meuemail@exemplo.com.br';
     $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
 
-    $pagseguro->notificacao_url = 'https://meusite.com.br/notificar.php';
-    $pagseguro->redirect_url = 'https://meusite.com.br/?pagseguro';
+    $pagseguro->notificacaoUrl = 'https://meusite.com.br/notificar.php';
+    $pagseguro->redirectUrl = 'https://meusite.com.br/?pagseguro';
 
     try {
         // Algo que identifique a compra. Máx 200 caracteres
         // Pode ser o nº do pedido, id do usuário, etc
-        $compra_id = 'pedido_123';
+        $compraId = 'pedido_123';
 
         // 1 único produto
         $produto = array(
@@ -38,7 +38,7 @@ Exemplos:
             'qtde' => 10
         );
 
-        $url = $pagseguro->pagar($compra_id, $produto);
+        $url = $pagseguro->pagar($compraId, $produto);
 
         echo $url;
     }
@@ -54,13 +54,13 @@ Exemplos:
     $pagseguro->email = 'meuemail@exemplo.com.br';
     $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
 
-    $pagseguro->redirect_url = 'https://meusite.com.br/?pagseguro';
+    $pagseguro->redirectUrl = 'https://meusite.com.br/?pagseguro';
 
     try {
         // Algum identificador único para a assinatura
         // Pode ser um login ou id do usuário
         // Máx 200 caracteres
-        $assinatura_id = 'usuario:paulo';
+        $assinaturaId = 'usuario:paulo';
 
         $preco = 9.9; // R$ 9,90
         $periodo = 12; // 12 meses (Obs.: não pode ser maior que 24 meses)
@@ -89,7 +89,7 @@ Exemplos:
             'valor_maximo' => $preco * $periodo
         );
 
-        $url = $pagseguro->assinar($assinatura_id, $assinatura);
+        $url = $pagseguro->assinar($assinaturaId, $assinatura);
         echo $url;
     }
     catch (PagSeguroException $e) {
@@ -124,7 +124,7 @@ Exemplos:
     $pagseguro->email = 'meuemail@exemplo.com.br';
     $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
 
-    $pagseguro->callback = function($xml, $notification_type, $notification_code,
+    $pagseguro->callback = function($xml, $notificationType, $notificationCode,
                                      $manual) {
 
         // Salvar no banco de dados:
@@ -138,7 +138,7 @@ Exemplos:
     };
 
     try {
-        $salvou = $pagseguro->notificar($_POST);
+        $salvou = $pagseguro->receberNotificacao($_POST);
 
         if ($salvou) {
             echo 'Notificação salva com sucesso';

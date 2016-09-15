@@ -1,4 +1,6 @@
 <?php
+namespace PagSeguro;
+
 class PagSeguroAssinatura extends PagSeguro {
 
     // Status das notificações de assinatura
@@ -11,7 +13,7 @@ class PagSeguroAssinatura extends PagSeguro {
     const SUSPENSA = 'SUSPENDED'; // ?
 
 
-    private function param_assinatura($assinatura) {
+    private function paramAssinatura($assinatura) {
         $param = array();
 
         // Assinatura: preco, nome, descricao, cobranca, periodo,
@@ -56,13 +58,13 @@ class PagSeguroAssinatura extends PagSeguro {
 
         $param = array(
             'reference' => $id,
-            'redirectURL' => $this->redirect_url
+            'redirectURL' => $this->redirectUrl
         );
 
         $param = array_merge($param,
-            $this->param_assinatura($assinatura),
-            $this->param_pessoa($pessoa),
-            $this->param_endereco($endereco)
+            $this->paramAssinatura($assinatura),
+            $this->paramPessoa($pessoa),
+            $this->paramEndereco($endereco)
         );
 
 
@@ -85,19 +87,17 @@ class PagSeguroAssinatura extends PagSeguro {
     }
 
 
-    public function cancelar($codigo_assinatura) {
-        // $codigo_assinatura = preApprovalCode
+    public function cancelar($codigoAssinatura) {
+        // $codigoAssinatura = preApprovalCode
 
         $xml = $this->request('GET', '/v2/pre-approvals/cancel/' .
-            $codigo_assinatura);
+            $codigoAssinatura);
 
         if (isset($xml->error)) {
             $this->erro('Não foi possível cancelar a assinatura');
         }
 
-        if (isset($xml->status) && strtolower($xml->status) === 'ok') {
-            // A assinatura foi cancelada com sucesso
-            return true;
-        }
+        // A assinatura foi cancelada com sucesso
+        return isset($xml->status) && strtolower($xml->status) === 'ok';
     }
 }

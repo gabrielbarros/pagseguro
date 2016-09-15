@@ -1,17 +1,20 @@
 <?php
-abstract class PagSeguro {
-    public $debug = false;
-    public $auto_redirect = false;
+namespace PagSeguro;
 
-    public $user_agent = 'Mini PagSeguro';
+use HttpRequest\HttpRequest;
+
+abstract class PagSeguro {
+    public $autoRedirect = false;
+
+    public $userAgent = 'Mini PagSeguro';
 
     public $email;
     public $token;
-    public $notificacao_url;
-    public $redirect_url;
+    public $notificacaoUrl;
+    public $redirectUrl;
 
     protected $url;
-    protected $api_url;
+    protected $apiUrl;
     protected $sandbox;
 
     public function __construct($sandbox = false) {
@@ -19,11 +22,11 @@ abstract class PagSeguro {
 
         if ($sandbox) {
             $this->url = 'https://sandbox.pagseguro.uol.com.br';
-            $this->api_url = 'https://ws.sandbox.pagseguro.uol.com.br';
+            $this->apiUrl = 'https://ws.sandbox.pagseguro.uol.com.br';
         }
         else {
             $this->url = 'https://pagseguro.uol.com.br';
-            $this->api_url = 'https://ws.pagseguro.uol.com.br';
+            $this->apiUrl = 'https://ws.pagseguro.uol.com.br';
         }
     }
 
@@ -31,7 +34,7 @@ abstract class PagSeguro {
         throw new PagSeguroException($msg);
     }
 
-    protected function random_string($length) {
+    protected function randomString($length) {
         if (function_exists('random_bytes')) {
             return bin2hex(random_bytes($length / 2));
         }
@@ -51,7 +54,7 @@ abstract class PagSeguro {
     }
 
     protected function go($url) {
-        if ($this->auto_redirect) {
+        if ($this->autoRedirect) {
             header('Location: ' . $url);
             exit;
         }
@@ -63,36 +66,36 @@ abstract class PagSeguro {
         set_time_limit(0);
 
         $http = new HttpRequest();
-        $http->user_agent = $this->user_agent;
+        $http->userAgent = $this->userAgent;
 
-        $default_param = array(
+        $defaultParam = array(
             'email' => $this->email,
             'token' => $this->token
         );
 
-        $url = $this->api_url . $path;
+        $url = $this->apiUrl . $path;
+        $param = array_merge($defaultParam, $param);
 
-        $http->request(
-            $method, $url,
-            array_merge($default_param, $param)
-        );
+        if ($method === 'GET') {
+            $http->setQuery($param);
+            $http->get($url);
+        }
+        else {
+            $http->setBody($param);
+            $http->post($url);
+        }
 
         if ($http->error) {
             $this->erro('Não foi possível se comunicar com o PagSeguro');
         }
 
-        // No método POST, os dados vêm em UTF-8;
-        // No método GET, os dados vêm em ISO-8859-1
-        if ($method === 'GET') {
-            $http->responseText = utf8_encode($http->responseText);
-        }
 
         // Erros?
         // 401: E-mail/token inválido
         // 404: Notificação/assinatura/transação não encontrada
-        $http_code = $http->status;
-        if ($http_code !== 200) {
-            $msg = 'Ocorreu um erro com o código HTTP ' . $http_code;
+        $httpCode = $http->status;
+        if ($httpCode !== 200) {
+            $msg = 'Ocorreu um erro com o código HTTP ' . $httpCode;
 
             // O normal é retornar um txt ou xml, mas às vezes o PagSeguro
             // retorna uma página html gigante quando está em manutenção
@@ -117,7 +120,7 @@ abstract class PagSeguro {
     }
 
 
-    protected function param_pessoa($pessoa) {
+    protected function paramPessoa($pessoa) {
         $param = array();
 
         // Pessoa (OPCIONAL!): nome, ddd, telefone, e-mail
@@ -141,7 +144,7 @@ abstract class PagSeguro {
     }
 
 
-    protected function param_endereco($endereco) {
+    protected function paramEndereco($endereco) {
         $param = array();
 
         // Endereço (OPCIONAL!): rua, numero, complemento, bairro,
@@ -182,5 +185,3 @@ abstract class PagSeguro {
         return $param;
     }
 }
-
-class PagSeguroException extends Exception {}
