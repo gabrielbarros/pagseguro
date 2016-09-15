@@ -99,7 +99,7 @@ Exemplos:
 ## Consultar uma transação no PagSeguro
 
     <?php
-    $pagseguro = new PagSeguroNotificacao();
+    $pagseguro = new PagSeguroConsulta();
 
     $pagseguro->email = 'meuemail@exemplo.com.br';
     $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
