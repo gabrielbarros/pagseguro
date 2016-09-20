@@ -12,16 +12,17 @@ class HttpRequest {
     public $maxRedirs = 10;
     public $contentType;
 
-    private $url;
-    private $urlInfo;
-    private $query;
-    private $body;
-    private $upload = false;
-    private $cookies;
-    private $headers = array();
-    private $options = array();
-    private $username;
-    private $password;
+    protected $url;
+    protected $urlInfo;
+    protected $query;
+    protected $body;
+    protected $upload = false;
+
+    protected $cookies;
+    protected $headers = array();
+    protected $options = array();
+    protected $username;
+    protected $password;
 
     // Return variables
     public $error;
@@ -119,7 +120,7 @@ class HttpRequest {
 
         // Validate URL
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            throw new Exception('Invalid URL');
+            throw new \Exception('Invalid URL');
         }
 
         // HTTP method
