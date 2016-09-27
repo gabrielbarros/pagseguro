@@ -260,11 +260,20 @@ class HttpRequest {
         $lines = explode("\r\n", trim($headers));
         $arrHeaders = array();
 
-        foreach ($lines as $value) {
-            $parts = explode(':', $value, 2);
+        foreach ($lines as $line) {
+            $parts = explode(':', $line, 2);
 
             if (count($parts) > 1) {
-                $arrHeaders[strtolower($parts[0])] = $parts[1];
+                $key = $parts[0];
+                $value = trim($parts[1]);
+
+                // Append header, eg.: Cache-control: public, max-age=600
+                if (isset($arrHeaders[$key])) {
+                    $arrHeaders[$key] .= ', ' . $value;
+                }
+                else {
+                    $arrHeaders[$key] = $value;
+                }
             }
         }
 
