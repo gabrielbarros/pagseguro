@@ -6,6 +6,7 @@ class HttpRequest {
     public $charset = 'UTF-8';
     public $userAgent = 'curl';
     public $followLocation = true;
+    public $ignoreInvalidCert = false;
     public $connectTimeout = 30;
     public $timeout = 30;
     public $autoReferer = true;
@@ -61,7 +62,8 @@ class HttpRequest {
 
     public function setCookies($cookie) {
         if (is_array($cookie)) {
-            $this->cookies = http_build_query($cookie, '', '; ', PHP_QUERY_RFC3986);
+            $this->cookies = http_build_query($cookie, '', '; ',
+                PHP_QUERY_RFC3986);
         }
 
         else {
@@ -129,7 +131,6 @@ class HttpRequest {
         }
         elseif ($method === 'HEAD') {
             $options[CURLOPT_NOBODY] = true;
-            $this->followLocation = false;
         }
         elseif ($method !== 'GET') {
             $options[CURLOPT_CUSTOMREQUEST] = $method;
@@ -146,8 +147,12 @@ class HttpRequest {
                     $options[CURLOPT_POSTFIELDS] = $this->body;
                 }
                 else {
-                    $options[CURLOPT_POSTFIELDS] = http_build_query($this->body);
-                    $this->contentType = 'application/x-www-form-urlencoded; charset=' . $this->charset;
+                    $options[CURLOPT_POSTFIELDS] = http_build_query(
+                        $this->body
+                    );
+
+                    $this->contentType = 'application/x-www-form-urlencoded;' .
+                        ' charset=' . $this->charset;
                 }
             }
 
@@ -180,13 +185,16 @@ class HttpRequest {
 
         // Set SSL certificate to securely access the page
         if (strtolower($this->urlInfo['scheme']) === 'https') {
-            $options[CURLOPT_SSL_VERIFYPEER] = true;
-            $options[CURLOPT_SSL_VERIFYHOST] = 2;
-            $options[CURLOPT_CAINFO] = __DIR__ . DIRECTORY_SEPARATOR . 'cacert.pem';
-        }
-        else {
-            $options[CURLOPT_SSL_VERIFYPEER] = false;
-            $options[CURLOPT_SSL_VERIFYHOST] = 0;
+            if ($this->ignoreInvalidCert) {
+                $options[CURLOPT_SSL_VERIFYPEER] = false;
+                $options[CURLOPT_SSL_VERIFYHOST] = 0;
+            }
+            else {
+                $options[CURLOPT_SSL_VERIFYPEER] = true;
+                $options[CURLOPT_SSL_VERIFYHOST] = 2;
+                $options[CURLOPT_CAINFO] = __DIR__ . DIRECTORY_SEPARATOR .
+                    'cacert.pem';
+            }
         }
 
         // User and password to access the page
@@ -257,7 +265,12 @@ class HttpRequest {
 
     private function headersToArray($headers) {
 
-        $lines = explode("\r\n", trim($headers));
+        // If method is HEAD and followLocation is true, the subsequent headers
+        // will be combined, hence show only the last request
+        $combinedHeaders = explode("\r\n\r\n", trim($headers));
+        $combinedHeaders = end($combinedHeaders);
+
+        $lines = explode("\r\n", $combinedHeaders);
         $arrHeaders = array();
 
         foreach ($lines as $line) {
