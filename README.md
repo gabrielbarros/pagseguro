@@ -159,9 +159,9 @@ Exemplos:
 
 ----------------
 
-## CloudFlare
+## Cloudflare
 
-Se estiver usando CloudFlare no site, é recomendável adicionar os seguintes IPs na whitelist do firewall, para que as notificações cheguem sem problemas:
+Se estiver usando Cloudflare no site, é recomendável adicionar os seguintes IPs na whitelist do firewall, para que as notificações cheguem sem problemas:
 
 - 186.234.16.8
 - 186.234.16.9
