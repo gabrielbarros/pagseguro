@@ -1,6 +1,6 @@
 # PagSeguro PHP
 
-![PagSeguro](https://raw.githubusercontent.com/gabrielsbarros/pagseguro/master/pagseguro.jpg)
+![PagSeguro](pagseguro.jpg)
 
 A mini biblioteca PagSeguro PHP (não-oficial) permite, de forma bem simplificada, realizar transações, fazer assinaturas, fazer consultas e sincronizar notificações perdidas.
 
@@ -159,8 +159,27 @@ Exemplos:
 
 ----------------
 
-## Cloudflare
+# FAQ PagSeguro
 
+## Qual é o login e senha para a sandbox?
+Use o mesmo e-mail e senha da conta no PagSeguro
+
+## Onde consigo o token da sandbox?
+Veja em https://sandbox.pagseguro.uol.com.br/vendedor/configuracoes.html
+
+## Onde consigo o e-mail e senha do comprador de testes?
+Veja em https://sandbox.pagseguro.uol.com.br/comprador-de-testes.html
+
+## Qual o CPF e telefone do comprador de testes?
+Em CPF, informe 12345678909. Em celular, pode ser 11 91111111.
+
+## Como faço para testar as notificações do PagSeguro em sandbox?
+Primeiro faça uma compra usando a biblioteca do PagSeguro, em localhost. Depois entre em https://sandbox.pagseguro.uol.com.br/transacoes.html, clique em uma transação e depois em "Reenviar notificação local". É importante usar HTTPS em localhost e preencher a URL de notificação (`$pagseguro->notificacaoUrl`)
+
+## Por que não recebo as notificações do PagSeguro em produção, usando Cloudflare?
+Infelizmente o PagSeguro ainda não é compatível com o certificado de segurança usado por sites que usam Cloudflare. Simplesmente não use HTTPS na URL de notificação. Nesse caso não há riscos de segurança, porque apenas o código de notificação é enviado.
+
+## O Cloudflare está bloqueando as requisições do PagSeguro. O que fazer?
 Se estiver usando Cloudflare no site, é recomendável adicionar os seguintes IPs na whitelist do firewall, para que as notificações cheguem sem problemas:
 
 - 186.234.16.8
