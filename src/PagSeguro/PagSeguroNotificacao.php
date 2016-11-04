@@ -56,10 +56,13 @@ class PagSeguroNotificacao extends PagSeguroConsulta {
 
         // Salvar notificação em um banco de dados, p. ex.
         if (is_callable($this->callback)) {
-            $salvou = ($this->callback)(
+            /*$salvou = ($this->callback)(
                 $xml,
                 $notificationType, $notificationCode, $manual
-            );
+            );*/
+
+            $salvou = call_user_func($this->callback, $xml, $notificationType,
+                $notificationCode, $manual);
 
             return $salvou;
         }
