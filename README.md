@@ -11,98 +11,98 @@ Exemplos:
     <?php
     $pagseguro = new PagSeguroTransacao();
 
-    $pagseguro->email = 'meuemail@exemplo.com.br';
-    $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
+    $pagseguro->email = PAGSEGURO_EMAIL;
+    $pagseguro->token = PAGSEGURO_TOKEN;
 
     $pagseguro->notificacaoUrl = 'https://meusite.com.br/notificar.php';
     $pagseguro->redirectUrl = 'https://meusite.com.br/?pagseguro';
 
+
     try {
         // Algo que identifique a compra. Máx 200 caracteres
         // Pode ser o nº do pedido, id do usuário, etc
-        $compraId = 'pedido_123';
+        $pagseguro->setId('pedido_45');
 
         // 1 único produto
-        $produto = array(
+        $produto = new Produto();
+        $produto->setId(123);
+        $produto->setPreco(19.99);
+        $produto->setDescricao('Livro de matemática');
+        $produto->setQuantidade(10);
 
-            // Identificação do produto. Máx 100 caracteres
-            'id' => 123,
+        $pagseguro->setProduto($produto);
 
-            // Preço. Valor inteiro
-            'preco' => 19.99,
-
-            // Descrição do produto. Máx 100 caracteres
-            'descricao' => 'Livro de matemática',
-
-            // Quantidade
-            'qtde' => 10
-        );
-
-        $url = $pagseguro->pagar($compraId, $produto);
+        $url = $pagseguro->pagar();
 
         echo $url;
     }
     catch (PagSeguroException $e) {
         echo 'ERRO: ' . $e;
     }
+
 
 ## Fazer uma assinatura
 
     <?php
     $pagseguro = new PagSeguroAssinatura();
 
-    $pagseguro->email = 'meuemail@exemplo.com.br';
-    $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
+    $pagseguro->email = PAGSEGURO_EMAIL;
+    $pagseguro->token = PAGSEGURO_TOKEN;
 
     $pagseguro->redirectUrl = 'https://meusite.com.br/?pagseguro';
+
 
     try {
         // Algum identificador único para a assinatura
         // Pode ser um login ou id do usuário
         // Máx 200 caracteres
-        $assinaturaId = 'usuario:paulo';
+        $pagseguro->setId('usuario:paulo');
+
 
         $preco = 9.9; // R$ 9,90
         $periodo = 12; // 12 meses (Obs.: não pode ser maior que 24 meses)
 
-        $assinatura = array(
-            // Preço da assinatura. Informar um valor inteiro
-            'preco' => $preco,
+        $assinatura = new Assinatura();
 
-            // Nome da assinatura. Máx 100 caracteres
-            'nome' => 'Revista mensal XPTO',
+        // Preço da assinatura. Informar um valor inteiro
+        $assinatura->setPreco($preco);
 
-            // Descrição da assinatura. Máx 255 caracteres (opcional)
-            'descricao' => 'Revista XPTO: tudo sobre programação',
+        // Nome da assinatura. Máx 100 caracteres
+        $assinatura->setNome('Revista mensal XPTO');
 
-            // auto ou manual (auto recomendado)
-            'cobranca' => 'auto',
+        // Descrição da assinatura. Máx 255 caracteres (opcional)
+        $assinatura->setDescricao('Revista XPTO: tudo sobre programação');
 
-            // Período: weekly, monthly, bimonthly, trimonthly, semiannually, yearly
-            'periodo' => 'monthly',
+        // auto ou manual (auto recomendado)
+        $assinatura->setCobranca('auto');
 
-            // Fim da vigência da assinatura (timestamp)
-            // -1day para não contar 1 mês a mais
-            'data_final' => strtotime('+' . $periodo . ' months -1day'),
+        // Período: weekly, monthly, bimonthly, trimonthly, semiannually, yearly
+        $assinatura->setPeriodo('monthly');
 
-            // Valor máximo que pode ser cobrado durante a vigência da assinatura
-            'valor_maximo' => $preco * $periodo
-        );
+        // Fim da vigência da assinatura (timestamp)
+        // -1day para não contar 1 mês a mais
+        $assinatura->setDataFinal(strtotime('+' . $periodo . ' months -1day'));
 
-        $url = $pagseguro->assinar($assinaturaId, $assinatura);
+        // Valor máximo que pode ser cobrado durante a vigência da assinatura
+        $assinatura->setValorMaximo($preco * $periodo);
+
+        $pagseguro->setAssinatura($assinatura);
+
+        $url = $pagseguro->assinar();
         echo $url;
     }
     catch (PagSeguroException $e) {
         echo 'ERRO: ' . $e;
     }
 
+
 ## Consultar uma transação no PagSeguro
 
     <?php
     $pagseguro = new PagSeguroConsulta();
 
-    $pagseguro->email = 'meuemail@exemplo.com.br';
-    $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
+    $pagseguro->email = PAGSEGURO_EMAIL;
+    $pagseguro->token = PAGSEGURO_TOKEN;
 
     try {
         $xml = $pagseguro->consultar(
@@ -117,12 +117,13 @@ Exemplos:
         echo 'ERRO: ' . $e;
     }
 
+
 ## Receber notificação do PagSeguro via POST
     <?php
     $pagseguro = new PagSeguroNotificacao();
 
-    $pagseguro->email = 'meuemail@exemplo.com.br';
-    $pagseguro->token = '0123456789ABCDEF0123456789ABCDEF';
+    $pagseguro->email = PAGSEGURO_EMAIL;
+    $pagseguro->token = PAGSEGURO_TOKEN;
 
     $pagseguro->callback = function($xml, $notificationType, $notificationCode,
                                      $manual) {
@@ -136,6 +137,7 @@ Exemplos:
 
         return true;
     };
+
 
     try {
         $salvou = $pagseguro->receberNotificacao($_POST);
@@ -155,6 +157,7 @@ Exemplos:
 
         echo 'ERRO: ' . $e;
     }
+
 
 
 ----------------

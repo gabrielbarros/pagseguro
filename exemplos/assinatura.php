@@ -3,6 +3,7 @@ require 'autoload.php';
 
 use PagSeguro\PagSeguroAssinatura;
 use PagSeguro\PagSeguroException;
+use PagSeguro\Assinatura;
 
 $sandbox = true;
 $pagseguro = new PagSeguroAssinatura($sandbox);
@@ -26,40 +27,41 @@ try {
     // Algum identificador único para a assinatura
     // Pode ser um login ou id do usuário
     // Máx 200 caracteres
-    $assinaturaId = 'usuario:paulo';
+    $pagseguro->setId('usuario:paulo');
+
 
     $preco = 9.9; // R$ 9,90
     $periodo = 12; // 12 meses (Obs.: não pode ser maior que 24 meses)
 
-    $assinatura = array(
-        // Preço da assinatura. Informar um valor inteiro
-        'preco' => $preco,
+    $assinatura = new Assinatura();
 
-        // Nome da assinatura. Máx 100 caracteres
-        'nome' => 'Revista mensal XPTO',
+    // Preço da assinatura. Informar um valor inteiro
+    $assinatura->setPreco($preco);
 
-        // Descrição da assinatura. Máx 255 caracteres (opcional)
-        'descricao' => 'Revista XPTO: tudo sobre programação',
+    // Nome da assinatura. Máx 100 caracteres
+    $assinatura->setNome('Revista mensal XPTO');
 
-        // auto ou manual (auto recomendado)
-        'cobranca' => 'auto',
+    // Descrição da assinatura. Máx 255 caracteres (opcional)
+    $assinatura->setDescricao('Revista XPTO: tudo sobre programação');
 
-        // Período: weekly, monthly, bimonthly, trimonthly, semiannually, yearly
-        'periodo' => 'monthly',
+    // auto ou manual (auto recomendado)
+    $assinatura->setCobranca('auto');
 
-        // Fim da vigência da assinatura (timestamp)
-        // -1day para não contar 1 mês a mais
-        'data_final' => strtotime('+' . $periodo . ' months -1day'),
+    // Período: weekly, monthly, bimonthly, trimonthly, semiannually, yearly
+    $assinatura->setPeriodo('monthly');
 
-        // Valor máximo que pode ser cobrado durante a vigência da assinatura
-        'valor_maximo' => $preco * $periodo
-    );
+    // Fim da vigência da assinatura (timestamp)
+    // -1day para não contar 1 mês a mais
+    $assinatura->setDataFinal(strtotime('+' . $periodo . ' months -1day'));
 
-    $url = $pagseguro->assinar($assinaturaId, $assinatura);
+    // Valor máximo que pode ser cobrado durante a vigência da assinatura
+    $assinatura->setValorMaximo($preco * $periodo);
+
+    $pagseguro->setAssinatura($assinatura);
+
+    $url = $pagseguro->assinar();
     echo $url;
 }
 catch (PagSeguroException $e) {
     echo 'ERRO: ' . $e;
 }
-
-

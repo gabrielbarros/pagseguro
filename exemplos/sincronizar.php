@@ -37,5 +37,3 @@ try {
 catch (PagSeguroException $e) {
     echo 'ERRO: ' . $e;
 }
-
-

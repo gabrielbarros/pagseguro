@@ -3,6 +3,7 @@ require 'autoload.php';
 
 use PagSeguro\PagSeguroTransacao;
 use PagSeguro\PagSeguroException;
+use PagSeguro\Produto;
 
 $sandbox = true;
 $pagseguro = new PagSeguroTransacao($sandbox);
@@ -22,30 +23,21 @@ $pagseguro->redirectUrl = 'https://meusite.com.br/?pagseguro';
 try {
     // Algo que identifique a compra. Máx 200 caracteres
     // Pode ser o nº do pedido, id do usuário, etc
-    $compraId = 'pedido_123';
+    $pagseguro->setId('pedido_45');
 
     // 1 único produto
-    $produto = array(
+    $produto = new Produto();
+    $produto->setId(123); // Máx 100 caracteres
+    $produto->setPreco(19.99);
+    $produto->setDescricao('Livro de matemática'); // Máx 100 caracteres
+    $produto->setQuantidade(10);
 
-        // Identificação do produto. Máx 100 caracteres
-        'id' => 123,
+    $pagseguro->setProduto($produto);
 
-        // Preço. Valor inteiro
-        'preco' => 19.99,
-
-        // Descrição do produto. Máx 100 caracteres
-        'descricao' => 'Livro de matemática',
-
-        // Quantidade
-        'qtde' => 10
-    );
-
-    $url = $pagseguro->pagar($compraId, $produto);
+    $url = $pagseguro->pagar();
 
     echo $url;
 }
 catch (PagSeguroException $e) {
     echo 'ERRO: ' . $e;
 }
-
-

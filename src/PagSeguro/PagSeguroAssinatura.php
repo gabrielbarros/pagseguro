@@ -3,6 +3,11 @@ namespace PagSeguro;
 
 class PagSeguroAssinatura extends PagSeguro {
 
+    private $id;
+    private $comprador;
+    private $endereco;
+    private $assinatura;
+
     // Status das notificações de assinatura
     const APROVADA = 'ACTIVE';
     const PENDENTE = 'PENDING';
@@ -13,60 +18,41 @@ class PagSeguroAssinatura extends PagSeguro {
     const SUSPENSA = 'SUSPENDED'; // ?
 
 
-    private function paramAssinatura($assinatura) {
-        $param = array();
+    public function setId($id) {
+        $this->id = $id;
+    }
 
-        // Assinatura: preco, nome, descricao, cobranca, periodo,
-        // data_final, valor_maximo
-        if (isset($assinatura['preco'])) {
-            $param['preApprovalAmountPerPayment'] = number_format(
-                $assinatura['preco'], 2);
-        }
+    public function setComprador($comprador) {
+        $this->comprador = $comprador;
+    }
 
-        if (isset($assinatura['nome'])) {
-            $param['preApprovalName'] = $assinatura['nome'];
-        }
+    public function setEndereco($endereco) {
+        $this->endereco = $endereco;
+    }
 
-        if (isset($assinatura['descricao'])) {
-            $param['preApprovalDetails'] = $assinatura['descricao'];
-        }
-
-        if (isset($assinatura['cobranca'])) {
-            $param['preApprovalCharge'] = $assinatura['cobranca'];
-        }
-
-        if (isset($assinatura['periodo'])) {
-            $param['preApprovalPeriod'] = $assinatura['periodo'];
-        }
-
-        if (isset($assinatura['data_final'])) {
-            $param['preApprovalFinalDate'] = date('c',
-                $assinatura['data_final']);
-        }
-
-        if (isset($assinatura['valor_maximo'])) {
-            $param['preApprovalMaxTotalAmount'] = number_format(
-                $assinatura['valor_maximo'], 2);
-        }
-
-        return $param;
+    public function setAssinatura($assinatura) {
+        $this->assinatura = $assinatura;
     }
 
 
-    public function assinar($id, $assinatura, $pessoa = null,
-                              $endereco = null) {
+    public function assinar() {
 
         $param = array(
-            'reference' => $id,
+            'reference' => $this->id,
             'redirectURL' => $this->redirectUrl
         );
 
-        $param = array_merge($param,
-            $this->paramAssinatura($assinatura),
-            $this->paramPessoa($pessoa),
-            $this->paramEndereco($endereco)
-        );
+        if (isset($this->comprador)) {
+            $param = array_merge($param, $this->comprador->toParam());
+        }
 
+        if (isset($this->endereco)) {
+            $param = array_merge($param, $this->endereco->toParam());
+        }
+
+        if (isset($this->assinatura)) {
+            $param = array_merge($param, $this->assinatura->toParam());
+        }
 
         $xml = $this->request('POST', '/v2/pre-approvals/request', $param);
 

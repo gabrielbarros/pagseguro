@@ -8,6 +8,7 @@ abstract class PagSeguro {
 
     public $userAgent = 'Mini PagSeguro';
 
+    public $debug = false;
     public $email;
     public $token;
     public $notificacaoUrl;
@@ -89,6 +90,14 @@ abstract class PagSeguro {
             $this->erro('Não foi possível se comunicar com o PagSeguro');
         }
 
+        // Correção para o encoding do PagSeguro
+        $http->responseText = utf8_encode($http->responseText);
+
+        if ($this->debug) {
+            header('Content-Type: text/plain');
+            exit($http->responseText);
+        }
+
 
         // Erros?
         // 401: E-mail/token inválido
@@ -117,71 +126,5 @@ abstract class PagSeguro {
         }
 
         return $xml;
-    }
-
-
-    protected function paramPessoa($pessoa) {
-        $param = array();
-
-        // Pessoa (OPCIONAL!): nome, ddd, telefone, e-mail
-        if (isset($pessoa['nome'])) {
-            $param['senderName'] = $pessoa['nome'];
-        }
-
-        if (isset($pessoa['ddd'])) {
-            $param['senderAreaCode'] = $pessoa['ddd'];
-        }
-
-        if (isset($pessoa['telefone'])) {
-            $param['senderPhone'] = $pessoa['telefone'];
-        }
-
-        if (isset($pessoa['email'])) {
-            $param['senderEmail'] = $pessoa['email'];
-        }
-
-        return $param;
-    }
-
-
-    protected function paramEndereco($endereco) {
-        $param = array();
-
-        // Endereço (OPCIONAL!): rua, numero, complemento, bairro,
-        // cep, cidade, estado, pais
-
-        if (isset($endereco['rua'])) {
-            $param['shippingAddressStreet'] = $endereco['rua'];
-        }
-
-        if (isset($endereco['numero'])) {
-            $param['shippingAddressNumber'] = $endereco['numero'];
-        }
-
-        if (isset($endereco['complemento'])) {
-            $param['shippingAddressComplement'] = $endereco['complemento'];
-        }
-
-        if (isset($endereco['bairro'])) {
-            $param['shippingAddressDistrict'] = $endereco['bairro'];
-        }
-
-        if (isset($endereco['cep'])) {
-            $param['shippingAddressPostalCode'] = $endereco['cep'];
-        }
-
-        if (isset($endereco['cidade'])) {
-            $param['shippingAddressCity'] = $endereco['cidade'];
-        }
-
-        if (isset($endereco['estado'])) {
-            $param['shippingAddressState'] = $endereco['estado'];
-        }
-
-        if (isset($endereco['pais'])) {
-            $param['shippingAddressCountry'] = $endereco['pais'];
-        }
-
-        return $param;
     }
 }

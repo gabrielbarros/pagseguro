@@ -3,6 +3,11 @@ namespace PagSeguro;
 
 class PagSeguroTransacao extends PagSeguro {
 
+    private $id;
+    private $comprador;
+    private $endereco;
+    private $produtos = array();
+
     // Status das notificações de transações
     const PENDENTE = 1;
     const EM_ANALISE = 2;
@@ -17,59 +22,49 @@ class PagSeguroTransacao extends PagSeguro {
     const ASSINATURA = 11;
 
 
-    private function paramProdutos($produtos) {
-        $param = array();
-
-        // Se for somente 1 produto, coloca dentro de 1 array...
-        if (isset($produtos['preco'])) {
-            $produtos = array($produtos);
-        }
-
-        // Produtos: id, preco, descricao, qtde, peso
-        $i = 1;
-        foreach ($produtos as $produto) {
-
-            if (isset($produto['id'])) {
-                $param['itemId' . $i] = $produto['id'];
-            }
-
-            if (isset($produto['preco'])) {
-                $param['itemAmount' . $i] = number_format($produto['preco'], 2);
-            }
-
-            if (isset($produto['descricao'])) {
-                $param['itemDescription' . $i] = $produto['descricao'];
-            }
-
-            if (isset($produto['qtde'])) {
-                $param['itemQuantity' . $i] = $produto['qtde'];
-            }
-
-            if (isset($produto['peso'])) {
-                $param['itemWeight' . $i] = $produto['peso'];
-            }
-
-            $i++;
-        }
-
-        return $param;
+    public function setId($id) {
+        $this->id = $id;
     }
 
+    public function setComprador($comprador) {
+        $this->comprador = $comprador;
+    }
 
-    public function pagar($id, $produtos, $pessoa = null, $endereco = null) {
+    public function setEndereco($endereco) {
+        $this->endereco = $endereco;
+    }
+
+    public function setProduto($produto) {
+        $this->produtos[0] = $produto;
+    }
+
+    public function setProdutos($produtos) {
+        for ($i = 0, $len = count($produtos); $i < $len; $i++) {
+            $this->produtos[$i] = $produtos[$i];
+            $this->produtos[$i]->setNumero($i + 1);
+        }
+    }
+
+    public function pagar() {
 
         $param = array(
             'currency' => 'BRL',
-            'reference' => $id,
+            'reference' => $this->id,
             'redirectURL' => $this->redirectUrl,
             'notificationURL' => $this->notificacaoUrl
         );
 
-        $param = array_merge($param,
-            $this->paramProdutos($produtos),
-            $this->paramPessoa($pessoa),
-            $this->paramEndereco($endereco)
-        );
+        if (isset($this->comprador)) {
+            $param = array_merge($param, $this->comprador->toParam());
+        }
+
+        if (isset($this->endereco)) {
+            $param = array_merge($param, $this->endereco->toParam());
+        }
+
+        foreach ($this->produtos as $produto) {
+            $param = array_merge($param, $produto->toParam());
+        }
 
         $xml = $this->request('POST', '/v2/checkout', $param);
 
