@@ -47,7 +47,7 @@ try {
     $pagseguro->setComprador($comprador);
 
     $endereco = new Endereco();
-    $endereco->setLogradouro('Praça do Patriarca ');
+    $endereco->setLogradouro('Praça do Patriarca');
     $endereco->setNumero('9999');
     $endereco->setComplemento('');
     $endereco->setBairro('Sé');

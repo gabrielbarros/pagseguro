@@ -5,6 +5,7 @@ class HttpRequest {
 
     public $charset = 'UTF-8';
     public $userAgent = 'curl';
+    public $debug = false;
     public $followLocation = true;
     public $ignoreInvalidCert = false;
     public $connectTimeout = 30;
@@ -31,6 +32,7 @@ class HttpRequest {
     public $responseText;
     public $responseHeaders;
     public $status;
+    public $debugInfo;
 
 
     const UA_IE10 = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)';
@@ -182,6 +184,11 @@ class HttpRequest {
         $options[CURLOPT_USERAGENT] = $this->userAgent;
         $options[CURLOPT_HTTPHEADER] = $this->headers;
 
+        // Add request headers in debug mode
+        if ($this->debug) {
+            $options[CURLINFO_HEADER_OUT] = true;
+        }
+
 
         // Set SSL certificate to securely access the page
         if (strtolower($this->urlInfo['scheme']) === 'https') {
@@ -220,6 +227,7 @@ class HttpRequest {
         curl_setopt_array($curl, $options);
 
         $output = curl_exec($curl);
+        $curlInfo = curl_getinfo($curl);
 
         // If an error has ocurred while requesting the URL...
         if (curl_errno($curl))  {
@@ -229,7 +237,6 @@ class HttpRequest {
 
         else {
             $this->error = false;
-            $curlInfo = curl_getinfo($curl);
 
             if ($method === 'HEAD') {
                 $this->responseText = $output;
@@ -243,6 +250,13 @@ class HttpRequest {
 
             $this->responseHeaders = $this->headersToArray($responseHeaders);
             $this->status = $curlInfo['http_code'];
+        }
+
+        if ($this->debug) {
+            $this->debugInfo = array_merge($curlInfo, array(
+                'error_msg' => $this->errorMsg,
+                'response' => $output
+            ));
         }
     }
 
