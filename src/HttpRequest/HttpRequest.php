@@ -13,6 +13,7 @@ class HttpRequest {
     public $autoReferer = true;
     public $maxRedirs = 10;
     public $contentType;
+    public $headersToObject = true;
 
     protected $url;
     protected $urlInfo;
@@ -114,18 +115,18 @@ class HttpRequest {
 
     public function request($method, $url) {
 
+        // Validate URL
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new \Exception('Invalid URL');
+        }
+
         $this->url = $url;
 
         // Get URL information: host, path, scheme
         $this->urlInfo = parse_url($url);
 
-        // CURL options
+        // cURL options
         $options = array();
-
-        // Validate URL
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            throw new \Exception('Invalid URL');
-        }
 
         // HTTP method
         if ($method === 'POST') {
@@ -218,7 +219,7 @@ class HttpRequest {
         }
 
 
-        // Custom CURL options
+        // Custom cURL options
         foreach ($this->options as $key => $value) {
             $options[$key] = $value;
         }
@@ -248,7 +249,15 @@ class HttpRequest {
                 $responseHeaders = substr($output, 0, $headerSize);
             }
 
-            $this->responseHeaders = $this->headersToArray($responseHeaders);
+            if ($this->headersToObject) {
+                $this->responseHeaders = $this->headersToObject(
+                    $responseHeaders
+                );
+            }
+            else {
+                $this->responseHeaders = $responseHeaders;
+            }
+
             $this->status = $curlInfo['http_code'];
         }
 
@@ -277,7 +286,7 @@ class HttpRequest {
         return $url;
     }
 
-    private function headersToArray($headers) {
+    private function headersToObject($headers) {
 
         // If method is HEAD and followLocation is true, the subsequent headers
         // will be combined, hence show only the last request
@@ -285,26 +294,26 @@ class HttpRequest {
         $combinedHeaders = end($combinedHeaders);
 
         $lines = explode("\r\n", $combinedHeaders);
-        $arrHeaders = array();
+        $objHeaders = new \StdClass();
 
         foreach ($lines as $line) {
             $parts = explode(':', $line, 2);
 
             if (count($parts) > 1) {
-                $key = $parts[0];
+                $key = strtr(strtolower($parts[0]), '-', '_');
                 $value = trim($parts[1]);
 
                 // Append header, eg.: Cache-control: public, max-age=600
-                if (isset($arrHeaders[$key])) {
-                    $arrHeaders[$key] .= ', ' . $value;
+                if (isset($objHeaders->$key)) {
+                    $objHeaders->$key .= ', ' . $value;
                 }
                 else {
-                    $arrHeaders[$key] = $value;
+                    $objHeaders->$key = $value;
                 }
             }
         }
 
-        return $arrHeaders;
+        return $objHeaders;
     }
 
     // Set some file to upload
