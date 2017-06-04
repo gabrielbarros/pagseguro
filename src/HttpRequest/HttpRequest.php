@@ -262,8 +262,19 @@ class HttpRequest {
         }
 
         if ($this->debug) {
+            $requestHeader = isset($curlInfo['request_header']) ?
+                $curlInfo['request_header'] : '';
+
+            $requestBody = is_array($this->body) ?
+                http_build_query($this->body) : $this->body;
+
+            $request = $requestHeader . $requestBody;
+
+            unset($curlInfo['request_header']);
+
             $this->debugInfo = array_merge($curlInfo, array(
                 'error_msg' => $this->errorMsg,
+                'request' => $request,
                 'response' => $output
             ));
         }
