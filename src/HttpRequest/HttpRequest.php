@@ -278,6 +278,8 @@ class HttpRequest {
                 'response' => $output
             ));
         }
+
+        curl_close($curl);
     }
 
     private function getFullUrl() {
