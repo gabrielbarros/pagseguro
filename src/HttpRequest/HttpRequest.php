@@ -17,7 +17,7 @@ class HttpRequest {
 
     protected $url;
     protected $urlInfo;
-    protected $query;
+    protected $query = array();
     protected $body;
     protected $upload = false;
 
