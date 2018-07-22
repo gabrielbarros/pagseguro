@@ -179,9 +179,6 @@ Em CPF, informe 12345678909. Em celular, pode ser 11 91111111.
 ## Como faço para testar as notificações do PagSeguro em sandbox?
 Primeiro faça uma compra usando a biblioteca do PagSeguro, em localhost. Depois entre em https://sandbox.pagseguro.uol.com.br/transacoes.html, clique em uma transação e depois em "Reenviar notificação local". É importante usar HTTPS em localhost e preencher a URL de notificação (`$pagseguro->notificacaoUrl`)
 
-## Por que não recebo as notificações do PagSeguro em produção, usando Cloudflare?
-Infelizmente o PagSeguro ainda não é compatível com o certificado de segurança usado por sites que usam Cloudflare. Simplesmente não use HTTPS na URL de notificação. Nesse caso não há riscos de segurança, porque apenas o código de notificação é enviado.
-
 ## O Cloudflare está bloqueando as requisições do PagSeguro. O que fazer?
 Se estiver usando Cloudflare no site, é recomendável adicionar os seguintes IPs na whitelist do firewall, para que as notificações cheguem sem problemas:
 
