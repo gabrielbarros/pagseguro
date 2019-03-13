@@ -28,7 +28,7 @@ class Produto {
     }
 
     public function setPreco($preco) {
-        $this->preco = $preco;
+        $this->preco = number_format($preco, 2);
     }
 
     public function setDescricao($descricao) {
