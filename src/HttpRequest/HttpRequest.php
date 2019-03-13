@@ -316,9 +316,24 @@ class HttpRequest {
                 $key = strtr(strtolower($parts[0]), '-', '_');
                 $value = trim($parts[1]);
 
-                // Append header, eg.: Cache-control: public, max-age=600
+                /*
+                If header already exists, set it as an array, eg:
+                    Cache-control: public
+                    Cache-control: max-age=600
+                Becomes:
+                    cache_control = array(
+                        [0] => 'public',
+                        [1] => 'max-age=600'
+                    )
+                */
                 if (isset($objHeaders->$key)) {
-                    $objHeaders->$key .= ', ' . $value;
+                    if (is_array($objHeaders->$key)) {
+                        $objHeaders->$key[] = $value;
+                    }
+                    else {
+                        $objHeaders->$key = array($objHeaders->$key);
+                        $objHeaders->$key[] = $value;
+                    }
                 }
                 else {
                     $objHeaders->$key = $value;
