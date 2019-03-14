@@ -25,6 +25,9 @@ try {
     // Pode ser o nº do pedido, id do usuário, etc
     $pagseguro->setId('pedido_45');
 
+    // Não pedir endereço
+    $pagseguro->setIgnorarEndereco(true);
+
     // 1 único produto
     $produto = new Produto();
     $produto->setId(123); // Máx 100 caracteres

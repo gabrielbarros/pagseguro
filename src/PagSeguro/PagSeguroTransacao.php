@@ -6,6 +6,7 @@ class PagSeguroTransacao extends PagSeguro {
     private $id;
     private $comprador;
     private $endereco;
+    private $ignorarEndereco;
     private $produtos = array();
 
     // Status das notificações de transações
@@ -34,6 +35,10 @@ class PagSeguroTransacao extends PagSeguro {
         $this->endereco = $endereco;
     }
 
+    public function setIgnorarEndereco($ignorarEndereco) {
+        $this->ignorarEndereco = $ignorarEndereco;
+    }
+
     public function setProduto($produto) {
         $this->produtos[0] = $produto;
     }
@@ -60,6 +65,10 @@ class PagSeguroTransacao extends PagSeguro {
 
         if (isset($this->endereco)) {
             $param = array_merge($param, $this->endereco->toParam());
+        }
+
+        if ($this->ignorarEndereco) {
+            $param['shippingAddressRequired'] = 'false';
         }
 
         foreach ($this->produtos as $produto) {
